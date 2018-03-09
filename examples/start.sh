@@ -19,6 +19,6 @@ export LD_LIBRARY_PATH="$LOCAL_GUACAMOLE/lib":$GUACAMOLE/lib:$LD_LIBRARY_PATH
 
 
 # run program
-cd "$DIR" && python3.5 ./main.py $1
+cd "$DIR" && env DISPLAY=:0.0 python3.5 ./main.py $1
 
 

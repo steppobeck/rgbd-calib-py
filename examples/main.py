@@ -58,7 +58,7 @@ class TimedRotate(avango.script.Script):
 
         if (self.TimeIn.value > 50) and self.state == 7:
                 print("start recording") # live_kinect_socket
-                self.play_object.stop()
+                #self.play_object.stop()
                 self.record_object.start()
                 self.state = 8
 
@@ -73,7 +73,7 @@ class TimedRotate(avango.script.Script):
                 self.state = 10
 
         if (self.TimeIn.value > 60) and self.state == 10:
-                self.play_object.stop()
+                #self.play_object.stop()
                 print("END of test")
                 self.state = 11
 def start():
