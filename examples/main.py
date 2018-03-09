@@ -5,42 +5,90 @@ from examples_common.GuaVE import GuaVE
 import sys
 import pyrgbdcalib
 
-
-
-
 class TimedRotate(avango.script.Script):
     TimeIn = avango.SFFloat()
-    MatrixOut = avango.gua.SFMatrix4()
+    live_avatar_matrix = avango.gua.SFMatrix4()
+    recorded_avatar_matrix = avango.gua.SFMatrix4()    
+    record_object = pyrgbdcalib.RemoteRecorder("141.54.147.40",8000)
+    play_object = pyrgbdcalib.RemotePlayer("141.54.147.40",8001)
+    state = 0
 
     def evaluate(self):
-        self.MatrixOut.value = avango.gua.make_trans_mat(
-            0.0, -1.0, -2.0) * avango.gua.make_rot_mat(10 * self.TimeIn.value *
+        self.live_avatar_matrix.value = avango.gua.make_trans_mat(
+            -0.5, -1.0, -2.0) * avango.gua.make_rot_mat(10 * self.TimeIn.value *
                                                        2.0, 0.0, 1.0, 0.0)
-        recording = pyrgbdcalib.RemoteRecorder("127.0.0.1:7000", "stream01.stream")
-        print("filename: " + recording.filename)
-        success=recording.record(10)
-        if success:
-            print("success!")
-        else:
-            print("no success :/")
+        self.recorded_avatar_matrix.value = avango.gua.make_trans_mat(
+             0.5, -1.0, -2.0) * avango.gua.make_rot_mat(10 * self.TimeIn.value *
+                                                       2.0, 0.0, 1.0, 0.0)
+        if (self.TimeIn.value > 5) and self.state == 0:
+                print("start recording") # live_kinect_socket
+                self.record_object.start()
+                self.state = 1
 
-        is_paused=recording.is_paused()
-        if success:
-            print("paused!")
-        else:
-            print("not paused :/")
-        
+        if (self.TimeIn.value > 10) and self.state == 1:
+                print("stop recording")
+                self.record_object.stop()
+                self.state = 2
 
 
-def start(filename):
+        if (self.TimeIn.value > 15) and self.state == 2:
+                print("start loop") # daemon_play_socket
+                self.play_object.loop()
+                self.state = 3
+
+        if (self.TimeIn.value > 20) and self.state == 3:
+                print("pause") # daemon_play_socket
+                self.play_object.pause()
+                self.state = 4
+
+        if (self.TimeIn.value > 25) and self.state == 4:
+                print("unpause")
+                self.play_object.unpause()
+                self.state = 5
+
+        if (self.TimeIn.value > 30) and self.state == 5:
+                print("stop")
+                self.play_object.stop()
+                self.state = 6
+
+        if (self.TimeIn.value > 40) and self.state == 6:
+                print("start play")
+                self.play_object.start()
+                self.state = 7
+
+        if (self.TimeIn.value > 50) and self.state == 7:
+                print("start recording") # live_kinect_socket
+                self.play_object.stop()
+                self.record_object.start()
+                self.state = 8
+
+        if (self.TimeIn.value > 52) and self.state == 8:
+                print("stop recording")
+                self.record_object.stop()
+                self.state = 9
+
+        if (self.TimeIn.value > 55) and self.state == 9:
+                print("start play")
+                self.play_object.start()
+                self.state = 10
+
+        if (self.TimeIn.value > 60) and self.state == 10:
+                self.play_object.stop()
+                print("END of test")
+                self.state = 11
+def start():
     # setup scenegraph
     graph = avango.gua.nodes.SceneGraph(Name="scenegraph")
     loader = avango.gua.nodes.TriMeshLoader()
 
     videoloader = avango.gua.nodes.Video3DLoader()
-    video_geode = videoloader.load("kinect", filename)
 
-    transform1 = avango.gua.nodes.TransformNode(Children=[video_geode])
+    live_avatar_node = videoloader.load("live_avatar", "/opt/kinect-resources/rgbd-framework/rgbd-daemon/kinect_recordings/surface_23_24_25_26_hades.ks")
+    live_avatar_transform = avango.gua.nodes.TransformNode(Children=[live_avatar_node])
+
+    recorded_avatar_node = videoloader.load("recorded_avatar", "/opt/kinect-resources/rgbd-framework/rgbd-daemon/kinect_recordings/surface_23_24_25_26_hades_playback.ks")
+    recorded_avatar_transform = avango.gua.nodes.TransformNode(Children=[recorded_avatar_node])
+
 
     light = avango.gua.nodes.LightNode(
         Type=avango.gua.LightType.POINT,
@@ -95,19 +143,20 @@ def start(filename):
         Height=1.5,
         Children=[cam])
 
-    graph.Root.value.Children.value = [transform1, light, screen]
+    graph.Root.value.Children.value = [live_avatar_transform, recorded_avatar_transform, light, screen]
 
     #setup viewer
     viewer = avango.gua.nodes.Viewer()
     viewer.SceneGraphs.value = [graph]
     viewer.Windows.value = [window]
 
-    monkey_updater = TimedRotate()
+    frame_updater = TimedRotate()
 
     timer = avango.nodes.TimeSensor()
-    monkey_updater.TimeIn.connect_from(timer.Time)
+    frame_updater.TimeIn.connect_from(timer.Time)
 
-    transform1.Transform.connect_from(monkey_updater.MatrixOut)
+    live_avatar_transform.Transform.connect_from(frame_updater.live_avatar_matrix)
+    recorded_avatar_transform.Transform.connect_from(frame_updater.recorded_avatar_matrix)
 
     guaVE = GuaVE()
     guaVE.start(locals(), globals())
@@ -116,4 +165,4 @@ def start(filename):
 
 
 if __name__ == '__main__':
-    start(sys.argv[1])
+    start()

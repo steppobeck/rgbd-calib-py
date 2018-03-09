@@ -1,4 +1,11 @@
+#ifndef REMOTERECORDER_HPP
+#define REMOTERECORDER_HPP
+
+
+
 #include <string>
+
+class udpconnection;
 
 namespace pyrgbdcalib{
 
@@ -6,26 +13,18 @@ namespace pyrgbdcalib{
 
   public:
 
-    RemoteRecorder(const std::string& socket, const std::string& filename);
+    RemoteRecorder(const std::string& client_ip, const unsigned int client_port);
+    ~RemoteRecorder();
+    void start();
+    void stop();
 
-    std::string get_filename() const;
-
-    void set_filename(std::string const & in_filename);
-
-    bool record(const unsigned num_seconds);
-
-    bool stop();
-
-    bool is_paused();
 
   private:
 
-    std::string m_socket;
-    std::string m_filename;
-
-    void re_init();
+    udpconnection* m_con;
 
   };
 
-
 }
+
+#endif //#ifndef REMOTERECORDER_HPP

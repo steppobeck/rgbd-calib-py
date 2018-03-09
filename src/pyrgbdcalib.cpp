@@ -3,6 +3,7 @@
  */
 
 #include <RemoteRecorder.hpp>
+#include <RemotePlayer.hpp>
 
 
 #include <boost/python.hpp>
@@ -24,12 +25,22 @@ BOOST_PYTHON_MODULE(pyrgbdcalib) {
 
     // expose the class RemoteRecorder
     class_<RemoteRecorder>("RemoteRecorder",
-        init<std::string const &, std::string const &>())
-        .def("record", &RemoteRecorder::record)
+        init<std::string const &, unsigned int const >())
+        .def("start", &RemoteRecorder::start)
         .def("stop", &RemoteRecorder::stop)
-        .def("is_paused", &RemoteRecorder::is_paused)
-        .add_property("filename", &RemoteRecorder::get_filename, &RemoteRecorder::set_filename)
+        //.def("is_paused", &RemoteRecorder::is_paused)
+        //.add_property("filename", &RemoteRecorder::get_filename, &RemoteRecorder::set_filename)
     ;
+
+    // expose the class RemotePlayer
+    class_<RemotePlayer>("RemotePlayer",
+        init<std::string const &, unsigned int const >())
+        .def("start", &RemotePlayer::start)
+        .def("stop", &RemotePlayer::stop)
+        .def("pause", &RemotePlayer::pause)
+        .def("unpause", &RemotePlayer::unpause)
+        .def("loop", &RemotePlayer::loop)
+    ;    
 }
 
 

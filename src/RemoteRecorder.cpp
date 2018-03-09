@@ -1,59 +1,39 @@
 #include "RemoteRecorder.hpp"
 
+#include <RemoteCommands.hpp>
+#include <udpconnection.hpp>
+
 #include <iostream>
 
 namespace pyrgbdcalib{
 
 
-  RemoteRecorder::RemoteRecorder(const std::string& socket, const std::string& filename)
-    : m_socket(socket),
-      m_filename(filename)
-  {
-    re_init();
-  }
-
-  void
-  RemoteRecorder::re_init(){
-    std::cout << "INFO: RemoteRecorder::re_init()" << std::endl;
-    // 1. open zmq socket to recorddaemon from rgbd-calib
-    // pass filename
-  }
-
-  std::string
-  RemoteRecorder::get_filename() const {
-    return m_filename;
-  }
-
-  void
-  RemoteRecorder::set_filename(std::string const & in_filename) {
-    if(is_paused()){
-      // 1. use zmq socket to tell recorddaemon new filename
-      m_filename = in_filename;
+    RemoteRecorder::RemoteRecorder(const std::string& client_ip, const unsigned int client_port)
+    : m_con(new udpconnection)
+    {
+      bool ret = m_con->open_sending_socket(client_ip.c_str(), client_port);
+      if(!ret){
+        std::cerr << "ERROR in RemoteRecorder::RemoteRecorder: could not open_sending_socket for " << client_ip << " on port " << client_port << std::endl;
+      }
     }
-  }
 
-  bool
-  RemoteRecorder::record(const unsigned num_seconds){
-    std::cout << "INFO: RemoteRecorder::record: starting recording for num seconds: " << num_seconds << std::endl;
-
-    // 1. use zmq socket to tell recorddaemon to record for num_seconds....
-
-    return true;
-  }
+    RemoteRecorder::~RemoteRecorder(){
+      // close m_con
+      delete m_con;
+    }
 
 
-  bool
-  RemoteRecorder::stop(){
-    // 1. use zmq socket to tell recorddaemon to stop and save....
-    return true;
-  }
+    void
+    RemoteRecorder::start(){
+      int command = RemoteCommands::RECORD;
+      m_con->send(&command, sizeof(command));
+    }
 
 
-  bool
-  RemoteRecorder::is_paused(){
-    // 1. use zmq socket to ask recorddaemon if saving of filename is finished....
-    return true;
-  }
-
+    void
+    RemoteRecorder::stop(){
+      int command = RemoteCommands::STOP;
+      m_con->send(&command, sizeof(command));
+    }
 
 }
